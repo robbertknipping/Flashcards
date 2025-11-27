@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flashcards: Voeding & Beweging</title>
+    
+    <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']]
+      },
+      svg: {
+        fontCache: 'global'
+      }
+    };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .instruction {
+            font-size: 0.9em;
+            color: #7f8c8d;
+            margin-bottom: 20px;
+            font-style: italic;
+        }
+
+        /* De container voor de kaart */
+        .card-container {
+            background-color: transparent;
+            width: 100%;
+            max-width: 600px;
+            height: 300px;
+            perspective: 1000px; /* Dit zorgt voor het 3D effect */
+            cursor: pointer;
+        }
+
+        /* De binnenkant die draait */
+        .card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+            box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2);
+            border-radius: 15px;
+        }
+
+        /* Klasse om te draaien (wordt toegevoegd met JS) */
+        .flipped {
+            transform: rotateY(180deg);
+        }
+
+        /* Voor- en achterkant algemeen */
+        .card-front, .card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            box-sizing: border-box;
+            font-size: 1.3em;
+            line-height: 1.5;
+        }
+
+        /* Voorkant styling */
+        .card-front {
+            background-color: white;
+            color: #333;
+            border: 2px solid #3498db;
+        }
+
+        /* Achterkant styling */
+        .card-back {
+            background-color: #3498db;
+            color: white;
+            transform: rotateY(180deg);
+        }
+
+        .controls {
+            margin-top: 30px;
+            display: flex;
+            gap: 15px;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #2c3e50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background-color: #34495e;
+        }
+
+        button:disabled {
+            background-color: #bdc3c7;
+            cursor: not-allowed;
+        }
+
+        .progress {
+            margin-top: 15px;
+            color: #7f8c8d;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Studiekaarten: Voeding & Beweging</h1>
+    <div class="instruction">Klik op de kaart om het antwoord te zien</div>
+
+    <div class="card-container" onclick="flipCard()">
+        <div class="card-inner" id="card-inner">
+            <div class="card-front">
+                <div id="front-text">Laden...</div>
+            </div>
+            <div class="card-back">
+                <div id="back-text">Laden...</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <button id="prevBtn" onclick="prevCard()">Vorige</button>
+        <button id="nextBtn" onclick="nextCard()">Volgende</button>
+    </div>
+    <div class="progress" id="progress">Kaart 1 van ...</div>
+
+    <script>
+        // Data van de flashcards. 
+        // Let op de dubbele backslashes (\\) voor LaTeX formules!
+        const cards = [
+            { front: "Hoofddoel van een warming-up", back: "Het verhogen van de lichaamstemperatuur en de bloedcirculatie om het lichaam voor te bereiden op inspanning." },
+            { front: "Betekenis CLUKS", back: "Coördinatie, Lenigheid, Uithoudingsvermogen, Kracht, Snelheid" },
+            { front: "CLUKS: De 'L' staat voor...", back: "Lenigheid (bewegingsvrijheid van gewrichten en spieren)." },
+            { front: "Formule voor BMI", back: "$$BMI = \\\\frac{gewicht}{lengte \\\\times lengte}$$" },
+            { front: "Eurofittest: Flamingo Balanstest meet...", back: "Coördinatie (specifiek evenwicht)." },
+            { front: "Eurofittest: Shuttlerun test meet...", back: "Uithoudingsvermogen (aerobe conditie)." },
+            { front: "Doel van een cooling-down", back: "De hartslag en ademhaling geleidelijk omlaag brengen en afvalstoffen afvoeren." },
+            { front: "Specifieke warming-up", back: "Oefeningen die gericht zijn op de sport die je gaat doen (bijv. balcontrole bij voetbal)." },
+            { front: "Algemene warming-up", back: "Oefeningen om het hele lichaam warm te maken, zoals joggen of fietsen." },
+            { front: "Nadeel van BMI-meting", back: "BMI maakt geen onderscheid tussen spiermassa en vetmassa (een bodybuilder kan een hoge BMI hebben maar niet te dik zijn)." },
+            { front: "Dynamische rekoefeningen", back: "Rekoefeningen waarbij je beweegt, zoals armzwaaien of knieheffen, om spieren te activeren." },
+            { front: "Statische rekoefeningen", back: "Rekoefeningen waarbij je stilstaat en een spier langzaam oprekt (vaak tijdens de cooling-down)." },
+            { front: "Rekenvoorbeeld BMI: 80kg en 2,00m", back: "$$\\frac{80}{2.00 \\\\times 2.00} = \\\\frac{80}{4} = 20$$" },
+            { front: "Grondmotorische eigenschappen", back: "De vijf basiseigenschappen van fitheid: Coördinatie, Lenigheid, Uithoudingsvermogen, Kracht, Snelheid." },
+            { front: "Eurofittest: Sit-and-reach test meet...", back: "Lenigheid (flexibiliteit van de onderrug en hamstrings)." },
+            { front: "Eurofittest: Handknijpkracht test meet...", back: "Statische kracht." },
+            { front: "Eurofittest: 10x5 meter sprint test meet...", back: "Snelheid en wendbaarheid." },
+            { front: "Functie warming-up voor zenuwstelsel", back: "Snellere signaaloverdracht tussen hersenen en spieren (betere reactie)." },
+            { front: "Effect cooling-down op spierpijn", back: "Helpt de opbouw van afvalstoffen (zoals melkzuur) te verminderen." },
+            { front: "Conditie definitie", back: "De door fysieke en psychische factoren gekenmerkte toestand van lichamelijk prestatievermogen." },
+            { front: "Nulmeting", back: "Een testmoment om de beginsituatie van je conditie vast te stellen voordat je begint met trainen." },
+            { front: "CLUKS: De 'C' staat voor...", back: "Coördinatie (samenwerking tussen lichaamsdelen)." },
+            { front: "CLUKS: De 'S' staat voor...", back: "Snelheid (reactiesnelheid, versnelling, maximale snelheid)." },
+            { front: "Voorbeelden dynamische rekoefeningen", back: "Armzwaaien, lunges, knieheffen, hakken-billen." },
+            { front: "Aerobe uithoudingsvermogen", back: "Het vermogen om lange tijd matige inspanning vol te houden (bijv. marathon)." }
+        ];
+
+        let currentIndex = 0;
+        const cardInner = document.getElementById('card-inner');
+        const frontText = document.getElementById('front-text');
+        const backText = document.getElementById('back-text');
+        const progress = document.getElementById('progress');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+
+        function updateCard() {
+            // Content invullen
+            frontText.innerHTML = cards[currentIndex].front;
+            backText.innerHTML = cards[currentIndex].back;
+            
+            // Progress update
+            progress.innerText = `Kaart ${currentIndex + 1} van ${cards.length}`;
+            
+            // Knoppen disablen
+            prevBtn.disabled = currentIndex === 0;
+            nextBtn.disabled = currentIndex === cards.length - 1;
+
+            // MathJax herladen voor formules
+            if (window.MathJax) {
+                MathJax.typesetPromise([frontText, backText]).catch((err) => console.log(err));
+            }
+        }
+
+        function flipCard() {
+            cardInner.classList.toggle('flipped');
+        }
+
+        function nextCard() {
+            if (currentIndex < cards.length - 1) {
+                // Als de kaart gedraaid is, draai hem eerst terug zonder animatie-vertraging voor de gebruiker
+                if (cardInner.classList.contains('flipped')) {
+                    cardInner.classList.remove('flipped');
+                    // Wacht heel even met nieuwe content laden zodat de kaart 'dicht' is
+                    setTimeout(() => {
+                        currentIndex++;
+                        updateCard();
+                    }, 300);
+                } else {
+                    currentIndex++;
+                    updateCard();
+                }
+            }
+        }
+
+        function prevCard() {
+            if (currentIndex > 0) {
+                if (cardInner.classList.contains('flipped')) {
+                    cardInner.classList.remove('flipped');
+                    setTimeout(() => {
+                        currentIndex--;
+                        updateCard();
+                    }, 300);
+                } else {
+                    currentIndex--;
+                    updateCard();
+                }
+            }
+        }
+
+        // Keyboard support
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight') nextCard();
+            if (e.key === 'ArrowLeft') prevCard();
+            if (e.key === ' ' || e.key === 'Enter') {
+                e.preventDefault(); 
+                flipCard();
+            }
+        });
+
+        // Start de app
+        updateCard();
+
+    </script>
+</body>
+</html>
